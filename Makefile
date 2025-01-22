@@ -1,16 +1,17 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -std=c++17 -Wall -pthread $(CFLAGS)
+CXXFLAGS += -std=c++17 -Wall -pthread $(GST_CFLAGS) $(EXTRA_CXXFLAGS)
+LDFLAGS += $(GST_LIBS) $(EXTRA_LDFLAGS)
 
 # Source and header files
 SRCS := src/camerastreamer.cc \
-	src/inferencewrapper.cc \
-	src/main.cc
+        src/inferencewrapper.cc \
+        src/main.cc
 
 OBJS := $(SRCS:.cc=.o)
 
 HEADERS := src/camerastreamer.h \
-	src/inferencewrapper.h
+           src/inferencewrapper.h
 
 # Target binary
 TARGET := coral-camera
@@ -25,10 +26,10 @@ GST_LIBS := $(shell pkg-config --libs gstreamer-1.0 gstreamer-plugins-base-1.0)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(GST_LIBS) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(GST_CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)
