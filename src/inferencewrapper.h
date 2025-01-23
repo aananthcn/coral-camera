@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "tensorflow/lite/interpreter.h"
-#include "tflite/public/edgetpu.h"
+#include "edgetpu.h"
 
 namespace coral {
 
