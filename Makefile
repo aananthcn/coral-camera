@@ -1,7 +1,7 @@
 # Compiler and flags
 CXXFLAGS += -std=c++17 -Wall -pthread $(GST_CFLAGS) $(EXTRA_CXXFLAGS)
 LDFLAGS += $(GST_LIBS) $(EXTRA_LDFLAGS) \
-           -ltensorflowlite -ledgetpu
+           -ltensorflowlite -ledgetpu -lusb-1.0
 
 # Source and header files
 SRCS := src/camerastreamer.cc \
