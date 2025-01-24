@@ -1,5 +1,4 @@
 # Compiler and flags
-CXX := g++
 CXXFLAGS += -std=c++17 -Wall -pthread $(GST_CFLAGS) $(EXTRA_CXXFLAGS)
 LDFLAGS += $(GST_LIBS) $(EXTRA_LDFLAGS)
 
