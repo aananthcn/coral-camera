@@ -1,5 +1,6 @@
 #include "camerastreamer.h"
 #include <cstdio>
+#include <iostream>
 
 #define GST_MINIMAL_CHECK(x)                                 \
     if (!(x)) {                                              \
