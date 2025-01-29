@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <chrono>  // Added for timing
 
 #include "tensorflow/lite/builtin_op_data.h"
 #include "tensorflow/lite/kernels/register.h"
@@ -96,8 +97,16 @@ namespace coral {
         std::memcpy(input, input_data, input_size);
         DEBUG_LOG("Input data copied to tensor.");
 
+        // Measure time before inference
+        auto start_time = std::chrono::high_resolution_clock::now();
+
         // Invoke inference
         TFLITE_MINIMAL_CHECK(interpreter_->Invoke() == kTfLiteOk);
+
+        // Measure time after inference
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+
         DEBUG_LOG("Inference invoked successfully.");
 
         // Process output
@@ -125,7 +134,9 @@ namespace coral {
         }
 
         std::cout << "[INFO] Inference result: " << labels_[max_index]
-                  << " with confidence: " << max_prob << std::endl;
+                  << " with confidence: " << max_prob
+                  << " (Inference Time: " << inference_time << " ms)" << std::endl;
+
         return {labels_[max_index], max_prob};
     }
 
