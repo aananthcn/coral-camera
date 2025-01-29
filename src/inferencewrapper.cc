@@ -124,8 +124,8 @@ namespace coral {
             exit(EXIT_FAILURE);
         }
 
-        std::cout << "Inference result: " << labels_[max_index]
-                  << " with confidence: " << max_prob;
+        std::cout << "[INFO] Inference result: " << labels_[max_index]
+                  << " with confidence: " << max_prob << std::endl;
         return {labels_[max_index], max_prob};
     }
 
