@@ -2,18 +2,25 @@
 #include <cstdio>
 #include <iostream>
 
+
+#define DEBUG_ON false  // Change to true to enable debug messages
+
+#define DEBUG_LOG(msg) \
+    do { if (DEBUG_ON) std::cout << "[DEBUG] " << msg << std::endl; } while (0)
+
 #define GST_MINIMAL_CHECK(x)                                 \
     if (!(x)) {                                              \
         fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__); \
         exit(EXIT_FAILURE);                                  \
     }
 
+
 namespace coral {
 
     namespace {
 
         GstFlowReturn OnNewSample(GstElement* sink, void* data) {
-            std::cout << "[DEBUG] OnNewSample: Receiving new sample..." << std::endl;
+            DEBUG_LOG("OnNewSample: Receiving new sample...");
             GstSample* sample;
             GstFlowReturn retval = GST_FLOW_OK;
 
@@ -22,7 +29,7 @@ namespace coral {
                 GstMapInfo info;
                 auto buf = gst_sample_get_buffer(sample);
                 if (gst_buffer_map(buf, &info, GST_MAP_READ) == TRUE) {
-                    std::cout << "[DEBUG] Sample buffer mapped successfully. Data size: " << info.size << std::endl;
+                    DEBUG_LOG("Sample buffer mapped successfully. Data size: " << info.size);
 
                     // Pass the frame to the user callback
                     auto user_data = reinterpret_cast<CameraStreamer::UserData*>(data);
@@ -45,7 +52,7 @@ namespace coral {
 
             switch (GST_MESSAGE_TYPE(msg)) {
                 case GST_MESSAGE_EOS:
-                    std::cout << "[DEBUG] OnBusMessage: End of stream received." << std::endl;
+                    DEBUG_LOG("OnBusMessage: End of stream received.");
                     g_main_loop_quit(loop);
                     break;
 
@@ -67,7 +74,7 @@ namespace coral {
                 }
 
                 default:
-                    std::cout << "[DEBUG] OnBusMessage: Received message of type " << GST_MESSAGE_TYPE_NAME(msg) << std::endl;
+                    DEBUG_LOG("OnBusMessage: Received message of type " << GST_MESSAGE_TYPE_NAME(msg));
                     break;
             }
             return TRUE;
@@ -76,27 +83,27 @@ namespace coral {
     } // namespace
 
     void CameraStreamer::RunPipeline(const gchar* pipeline_string, UserData user_data) {
-        std::cout << "[DEBUG] Initializing GStreamer pipeline..." << std::endl;
+        DEBUG_LOG("Initializing GStreamer pipeline...");
         gst_init(nullptr, nullptr);
 
         // Set up a pipeline based on the pipeline string
-        std::cout << "[DEBUG] Creating GStreamer main loop." << std::endl;
+        DEBUG_LOG("Creating GStreamer main loop.");
         auto loop = g_main_loop_new(nullptr, FALSE);
         GST_MINIMAL_CHECK(loop != nullptr);
 
-        std::cout << "[DEBUG] Parsing pipeline string: " << pipeline_string << std::endl;
+        DEBUG_LOG("Parsing pipeline string: " << pipeline_string);
         auto pipeline = gst_parse_launch(pipeline_string, nullptr);
         GST_MINIMAL_CHECK(pipeline != nullptr);
 
         // Add a bus watcher
-        std::cout << "[DEBUG] Adding bus watcher." << std::endl;
+        DEBUG_LOG("Adding bus watcher.");
         auto bus = gst_element_get_bus(pipeline);
         GST_MINIMAL_CHECK(bus != nullptr);
         gst_bus_add_watch(bus, OnBusMessage, loop);
         gst_object_unref(bus);
 
         // Set up an appsink to pass frames to a user callback
-        std::cout << "[DEBUG] Setting up appsink." << std::endl;
+        DEBUG_LOG("Setting up appsink.");
         auto appsink = gst_bin_get_by_name(reinterpret_cast<GstBin*>(pipeline), "appsink");
         GST_MINIMAL_CHECK(appsink != nullptr);
 
@@ -104,12 +111,12 @@ namespace coral {
         g_signal_connect(appsink, "new-sample", reinterpret_cast<GCallback>(OnNewSample), &user_data);
 
         // Start the pipeline
-        std::cout << "[DEBUG] Starting pipeline." << std::endl;
+        DEBUG_LOG("Starting pipeline.");
         gst_element_set_state(pipeline, GST_STATE_PLAYING);
         g_main_loop_run(loop);
 
         // Cleanup
-        std::cout << "[DEBUG] Cleaning up pipeline." << std::endl;
+        DEBUG_LOG("Cleaning up pipeline.");
         gst_element_set_state(pipeline, GST_STATE_NULL);
         gst_object_unref(pipeline);
     }

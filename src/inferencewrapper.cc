@@ -10,6 +10,12 @@
 #include "tensorflow/lite/model.h"
 #include "edgetpu.h"
 
+
+#define DEBUG_ON false  // Change to true to enable debug messages
+
+#define DEBUG_LOG(msg) \
+    do { if (DEBUG_ON) std::cout << "[DEBUG] " << msg << std::endl; } while (0)
+
 #define TFLITE_MINIMAL_CHECK(x)                              \
     if (!(x)) {                                              \
         fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__); \
@@ -20,7 +26,7 @@ namespace coral {
     namespace {
         // Helper function to read labels from a file
         std::vector<std::string> read_labels(const std::string &label_path) {
-            std::cout << "[DEBUG] Reading labels from file: " << label_path << std::endl;
+            DEBUG_LOG("Reading labels from file: " << label_path);
             std::vector<std::string> labels;
 
             std::ifstream label_file(label_path);
@@ -34,19 +40,19 @@ namespace coral {
                 exit(EXIT_FAILURE);
             }
 
-            std::cout << "[DEBUG] Successfully read " << labels.size() << " labels." << std::endl;
+            DEBUG_LOG("Successfully read " << labels.size() << " labels.");
             return labels;
         }
     } // namespace
 
     InferenceWrapper::InferenceWrapper(const std::string &model_path, const std::string &label_path) {
-        std::cout << "[DEBUG] Initializing InferenceWrapper with model: " << model_path
-                  << " and labels: " << label_path << std::endl;
+        DEBUG_LOG("Initializing InferenceWrapper with model: " << model_path
+                  << " and labels: " << label_path);
 
         // Load model
         auto model = tflite::FlatBufferModel::BuildFromFile(model_path.c_str());
         TFLITE_MINIMAL_CHECK(model != nullptr);
-        std::cout << "[DEBUG] Model loaded successfully." << std::endl;
+        DEBUG_LOG("Model loaded successfully.");
 
         // Open Edge TPU device
         edgetpu_context_ = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
@@ -54,7 +60,7 @@ namespace coral {
             std::cerr << "[ERROR] Failed to open Edge TPU device." << std::endl;
             exit(EXIT_FAILURE);
         }
-        std::cout << "[DEBUG] Edge TPU device opened successfully." << std::endl;
+        DEBUG_LOG("Edge TPU device opened successfully.");
 
         // Build interpreter
         tflite::ops::builtin::BuiltinOpResolver resolver;
@@ -63,7 +69,7 @@ namespace coral {
             std::cerr << "[ERROR] Failed to build Interpreter." << std::endl;
             exit(EXIT_FAILURE);
         }
-        std::cout << "[DEBUG] Interpreter built successfully." << std::endl;
+        DEBUG_LOG("Interpreter built successfully.");
 
         // Set TPU context
         interpreter_->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context_.get());
@@ -71,16 +77,16 @@ namespace coral {
 
         // Allocate tensors
         TFLITE_MINIMAL_CHECK(interpreter_->AllocateTensors() == kTfLiteOk);
-        std::cout << "[DEBUG] Tensors allocated successfully." << std::endl;
+        DEBUG_LOG("Tensors allocated successfully.");
 
         // Load labels
         labels_ = read_labels(label_path);
-        std::cout << "[DEBUG] InferenceWrapper initialized successfully." << std::endl;
+        DEBUG_LOG("InferenceWrapper initialized successfully.");
     }
 
     std::pair<std::string, float> InferenceWrapper::RunInference(
         const uint8_t *input_data, int input_size) {
-        std::cout << "[DEBUG] Running inference with input size: " << input_size << std::endl;
+        DEBUG_LOG("Running inference with input size: " << input_size);
 
         // Prepare input
         uint8_t *input = interpreter_->typed_input_tensor<uint8_t>(0);
@@ -89,17 +95,17 @@ namespace coral {
             exit(EXIT_FAILURE);
         }
         std::memcpy(input, input_data, input_size);
-        std::cout << "[DEBUG] Input data copied to tensor." << std::endl;
+        DEBUG_LOG("Input data copied to tensor.");
 
         // Invoke inference
         TFLITE_MINIMAL_CHECK(interpreter_->Invoke() == kTfLiteOk);
-        std::cout << "[DEBUG] Inference invoked successfully." << std::endl;
+        DEBUG_LOG("Inference invoked successfully.");
 
         // Process output
         const auto &output_indices = interpreter_->outputs();
         const auto *out_tensor = interpreter_->tensor(output_indices[0]);
         TFLITE_MINIMAL_CHECK(out_tensor != nullptr);
-        std::cout << "[DEBUG] Output tensor retrieved successfully." << std::endl;
+        DEBUG_LOG("Output tensor retrieved successfully.");
 
         float max_prob = 0.0f;
         int max_index = -1;
@@ -107,20 +113,20 @@ namespace coral {
             const uint8_t *output = interpreter_->typed_output_tensor<uint8_t>(0);
             max_index = std::max_element(output, output + out_tensor->bytes) - output;
             max_prob = (output[max_index] - out_tensor->params.zero_point) * out_tensor->params.scale;
-            std::cout << "[DEBUG] Processed UINT8 output tensor." << std::endl;
+            DEBUG_LOG("Processed UINT8 output tensor.");
         } else if (out_tensor->type == kTfLiteFloat32) {
             const float *output = interpreter_->typed_output_tensor<float>(0);
             max_index = std::max_element(output, output + out_tensor->bytes / sizeof(float)) - output;
             max_prob = output[max_index];
-            std::cout << "[DEBUG] Processed FLOAT32 output tensor." << std::endl;
+            DEBUG_LOG("Processed FLOAT32 output tensor.");
         } else {
             std::cerr << "[ERROR] Tensor " << out_tensor->name
                       << " has unsupported output type: " << out_tensor->type << std::endl;
             exit(EXIT_FAILURE);
         }
 
-        std::cout << "[DEBUG] Inference result: " << labels_[max_index]
-                  << " with confidence: " << max_prob << std::endl;
+        DEBUG_LOG("Inference result: " << labels_[max_index]
+                  << " with confidence: " << max_prob);
         return {labels_[max_index], max_prob};
     }
 
