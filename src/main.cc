@@ -11,7 +11,7 @@ using coral::InferenceWrapper;
 
 
 // Enable or disable debug logging
-#define DEBUG_ON false  // Change this to true to enable debug logs
+#define DEBUG_ON true  // Change this to true to enable debug logs
 
 #define DEBUG_LOG(msg) \
     do { if (DEBUG_ON) std::cout << "[DEBUG] " << msg << std::endl; } while (0)

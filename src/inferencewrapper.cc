@@ -125,8 +125,8 @@ namespace coral {
             exit(EXIT_FAILURE);
         }
 
-        DEBUG_LOG("Inference result: " << labels_[max_index]
-                  << " with confidence: " << max_prob);
+        "Inference result: " << labels_[max_index]
+                  << " with confidence: " << max_prob;
         return {labels_[max_index], max_prob};
     }
 
