@@ -10,7 +10,6 @@
 #include "tensorflow/lite/model.h"
 #include "edgetpu.h"
 
-
 #define DEBUG_ON false  // Change to true to enable debug messages
 
 #define DEBUG_LOG(msg) \
@@ -125,7 +124,7 @@ namespace coral {
             exit(EXIT_FAILURE);
         }
 
-        "Inference result: " << labels_[max_index]
+        std::cout << "Inference result: " << labels_[max_index]
                   << " with confidence: " << max_prob;
         return {labels_[max_index], max_prob};
     }
